@@ -43,6 +43,9 @@ Source: "C:\MBackRelease\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdi
 ; 2. 設定ファイルだけは「ファイルがない時だけ」コピーする（上書き禁止！）
 Source: "C:\MBackRelease\appsettings.json"; DestDir: "{app}"; Flags: onlyifdoesntexist uninsneveruninstall
 
+; 3. OSSサードパーティライセンス通知ファイルをコピー
+Source: "{#SourcePath}\THIRD-PARTY-NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
+
 [Icons]
 ; スタートメニューにショートカット作成
 Name: "{group}\{#MyAppName} 設定"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyIconFile}"

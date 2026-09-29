@@ -59,11 +59,19 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        string emergencyFile = Path.Combine(_configDir, "emergency.txt");
+        if (File.Exists(emergencyFile))
+        {
+            _isCircuitBreakerTripped = true;
+            _logger.LogCritical("緊急停止フラグ (emergency.txt) を検出したため、サーキットブレーカーを解除せずに起動しました。MBack.Configの復旧ボタンで解除するまでバックアップは再開されません。");
+        }
+
         LoadSettings();
         MountAllNetworkDrives();
         DeployHoneypots();
         StartWatchers();
         MigrateOldLogs();
+        WriteRestoreManifests();
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -88,6 +96,7 @@ public class Worker : BackgroundService
             {
                 MountAllNetworkDrives();
                 RunFullScan();
+                WriteRestoreManifests();
                 _lastFullScanDate = now;
             }
 
@@ -296,13 +305,58 @@ public class Worker : BackgroundService
     private void TriggerCircuitBreaker(string message)
     {
         _isCircuitBreakerTripped = true;
-        _pendingBackups.Clear(); 
-        
+        _pendingBackups.Clear();
+
         string emergencyFile = Path.Combine(_configDir, "emergency.txt");
-        if (!File.Exists(emergencyFile)) File.WriteAllText(emergencyFile, "TRIPPED");
+        if (!File.Exists(emergencyFile)) File.WriteAllText(emergencyFile, $"TRIPPED_AT={DateTime.UtcNow:o}");
+
+        WriteRestoreManifests();
 
         NotifyError("SYSTEM_EMERGENCY", message);
         _logger.LogCritical(message);
+    }
+
+    // 緊急停止フラグの発動時刻を取得する（emergency.txtから）。存在しない/解析不能なら null
+    private DateTime? GetCircuitBreakerTrippedUtc()
+    {
+        string emergencyFile = Path.Combine(_configDir, "emergency.txt");
+        if (!File.Exists(emergencyFile)) return null;
+
+        try {
+            string content = File.ReadAllText(emergencyFile).Trim();
+            const string prefix = "TRIPPED_AT=";
+            if (content.StartsWith(prefix, StringComparison.Ordinal) &&
+                DateTime.TryParse(content.Substring(prefix.Length), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out var dt))
+            {
+                return dt;
+            }
+        } catch { }
+        return null; // 存在するが解析できない(旧形式など)場合は時刻不明として扱う
+    }
+
+    // 災害復旧ツール(Mrestore)向けに、各バックアップ先へ復元用マニフェストを書き出す
+    private void WriteRestoreManifests()
+    {
+        DateTime? trippedUtc = GetCircuitBreakerTrippedUtc();
+
+        foreach (var pair in _settings.BackupSettings)
+        {
+            try {
+                if (string.IsNullOrWhiteSpace(pair.Destination) || !Directory.Exists(pair.Destination)) continue;
+
+                var manifest = new RestoreManifest {
+                    SourcePath = pair.Source,
+                    DestinationPath = pair.Destination,
+                    GeneratedAtUtc = DateTime.UtcNow,
+                    CircuitBreakerTrippedAtUtc = trippedUtc
+                };
+
+                string manifestPath = Path.Combine(pair.Destination, "restore-manifest.json");
+                string tempPath = manifestPath + ".tmp";
+                File.WriteAllText(tempPath, JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
+                File.Move(tempPath, manifestPath, true);
+            } catch { }
+        }
     }
 
     private void RunFullScan()
@@ -658,6 +712,9 @@ public class Worker : BackgroundService
                         ResizeSchedule = s.ResizeSchedule ?? "Monthly_1",
                         MaxHistory = s.MaxHistory > 0 ? s.MaxHistory : 10
                     };
+
+                    foreach (var pair in _settings.BackupSettings) pair.Password = CredentialProtector.Unprotect(pair.Password);
+                    _settings.MailConfig.Password = CredentialProtector.Unprotect(_settings.MailConfig.Password);
                 }
             } catch { }
         }
@@ -767,3 +824,21 @@ public class AppSettingsRaw {
 
 public class MailSettings { public bool Enabled { get; set; } = false; public string ToAddress { get; set; } = ""; public string FromAddress { get; set; } = ""; public string SmtpServer { get; set; } = ""; public int SmtpPort { get; set; } = 587; public bool SmtpSsl { get; set; } = true; public string UserName { get; set; } = ""; public string Password { get; set; } = ""; public bool UsePopBeforeSmtp { get; set; } = false; public string PopServer { get; set; } = ""; public int PopPort { get; set; } = 110; public bool PopSsl { get; set; } = false; }
 public class BackupPair { public string Source { get; set; } = ""; public string Destination { get; set; } = ""; public string UserName { get; set; } = ""; public string Password { get; set; } = ""; public string PreCommand { get; set; } = ""; public string PostCommand { get; set; } = ""; }
+
+// 災害復旧ツール(Mrestore)向けに Destination 直下へ書き出すマニフェスト
+public class RestoreManifest
+{
+    public int SchemaVersion { get; set; } = 1;
+    public string SourcePath { get; set; } = "";
+    public string DestinationPath { get; set; } = "";
+    public DateTime GeneratedAtUtc { get; set; }
+    public DateTime? CircuitBreakerTrippedAtUtc { get; set; }
+    public RestoreManifestExclusions Exclusions { get; set; } = new();
+}
+
+public class RestoreManifestExclusions
+{
+    public string TrashFolderName { get; set; } = "_TRASH_";
+    public string HoneypotFileName { get; set; } = "!000_MBack_Trap.txt";
+    public string HistoryFileSuffixRegex { get; set; } = @"\.v\d+$";
+}

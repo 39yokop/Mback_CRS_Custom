@@ -1,3 +1,0 @@
-C:\MBackRelease\MBack.Config.pdb
-C:\MBackRelease\e_sqlite3.dll
-C:\MBackRelease\MBack.Config.exe

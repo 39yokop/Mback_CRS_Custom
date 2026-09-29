@@ -362,8 +362,11 @@ namespace MBack.Config
                     _logRetentionDays = settings.LogRetentionDays > 0 ? settings.LogRetentionDays : 60;
                     _ransomwareThreshold = settings.RansomwareThreshold > 0 ? settings.RansomwareThreshold : 2000;
                     _maintStart = settings.MaintenanceStart ?? "00:00"; _maintEnd = settings.MaintenanceEnd ?? "00:00";
-                    _sendSummary = settings.SendDailySummary; _mailConfig = settings.MailConfig ?? new(); 
-                    
+                    _sendSummary = settings.SendDailySummary; _mailConfig = settings.MailConfig ?? new();
+
+                    foreach (var pair in _backupList) pair.Password = CredentialProtector.Unprotect(pair.Password);
+                    _mailConfig.Password = CredentialProtector.Unprotect(_mailConfig.Password);
+
                     _heicEnabled = settings.HeicConversionEnabled;
                     _keepHeic = settings.KeepOriginalHeic;
                     _heicLongSide = settings.HeicLongSide > 0 ? settings.HeicLongSide : 3500;
@@ -385,10 +388,27 @@ namespace MBack.Config
         private void SaveSettings()
         {
             try {
+                // 画面上は平文のまま使い続けるため、保存用に別インスタンスへコピーしてから暗号化する
+                var encryptedBackupList = new List<BackupPair>();
+                foreach (var p in _backupList) {
+                    encryptedBackupList.Add(new BackupPair {
+                        Source = p.Source, Destination = p.Destination, UserName = p.UserName,
+                        Password = CredentialProtector.Protect(p.Password),
+                        PreCommand = p.PreCommand, PostCommand = p.PostCommand
+                    });
+                }
+                var encryptedMailConfig = new MailSettings {
+                    Enabled = _mailConfig.Enabled, ToAddress = _mailConfig.ToAddress, FromAddress = _mailConfig.FromAddress,
+                    SmtpServer = _mailConfig.SmtpServer, SmtpPort = _mailConfig.SmtpPort, SmtpSsl = _mailConfig.SmtpSsl,
+                    UserName = _mailConfig.UserName, Password = CredentialProtector.Protect(_mailConfig.Password),
+                    UsePopBeforeSmtp = _mailConfig.UsePopBeforeSmtp, PopServer = _mailConfig.PopServer,
+                    PopPort = _mailConfig.PopPort, PopSsl = _mailConfig.PopSsl
+                };
+
                 var settings = new AppSettingsRaw {
-                    BackupSettings = _backupList, GlobalExclusions = _globalExclusions, LogRetentionDays = _logRetentionDays,
+                    BackupSettings = encryptedBackupList, GlobalExclusions = _globalExclusions, LogRetentionDays = _logRetentionDays,
                     RansomwareThreshold = _ransomwareThreshold, MaintenanceStart = _maintStart, MaintenanceEnd = _maintEnd,
-                    SendDailySummary = _sendSummary, MailConfig = _mailConfig,
+                    SendDailySummary = _sendSummary, MailConfig = encryptedMailConfig,
                     
                     HeicConversionEnabled = _heicEnabled, KeepOriginalHeic = _keepHeic,
                     HeicLongSide = _heicLongSide, HeicQuality = _heicQuality, PreserveExif = _preserveExif,

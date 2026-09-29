@@ -1,0 +1,61 @@
+# ------------------------------------------------------------
+# .NET / Visual Studio / Rider 標準
+# ------------------------------------------------------------
+
+# ビルド成果物
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+
+# 配布バイナリ（インストーラー）はリポジトリに含めない
+MBackSetup.exe
+*.msi
+*.appx
+*.appxbundle
+
+# Visual Studio キャッシュ
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+*.DotSettings.user
+
+# VS Code workspace 個別設定（共有したいファイルだけ残す）
+.vscode/*.local.json
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Build logs
+*.binlog
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+# ------------------------------------------------------------
+# ローカル履歴拡張機能の自動生成フォルダ（共有不要）
+# ------------------------------------------------------------
+.history/
+
+# ------------------------------------------------------------
+# OS / エディタ
+# ------------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# ------------------------------------------------------------
+# 配布スクリプトのローカル一時ステージング先（CIや他PCでは作成される）
+# ------------------------------------------------------------
+# 注: MBack.iss が参照する C:\MBackRelease は他のドライブにあるため除外不要
