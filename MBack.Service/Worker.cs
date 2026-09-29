@@ -307,13 +307,31 @@ public class Worker : BackgroundService
         _isCircuitBreakerTripped = true;
         _pendingBackups.Clear();
 
+        var trippedAtUtc = DateTime.UtcNow;
         string emergencyFile = Path.Combine(_configDir, "emergency.txt");
-        if (!File.Exists(emergencyFile)) File.WriteAllText(emergencyFile, $"TRIPPED_AT={DateTime.UtcNow:o}");
+        if (!File.Exists(emergencyFile)) File.WriteAllText(emergencyFile, $"TRIPPED_AT={trippedAtUtc:o}");
 
         WriteRestoreManifests();
 
-        NotifyError("SYSTEM_EMERGENCY", message);
+        // ★Destinationが全滅した場合でもメールという別経路に復旧用情報を残す
+        NotifyError("SYSTEM_EMERGENCY", message + BuildManifestSummaryForNotification(trippedAtUtc));
         _logger.LogCritical(message);
+    }
+
+    // 緊急通知メールに埋め込む、災害復旧(Mrestore)用の補足情報
+    private string BuildManifestSummaryForNotification(DateTime trippedAtUtc)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine();
+        sb.AppendLine("--- 災害復旧メモ（Mrestoreで使用） ---");
+        sb.AppendLine($"発動時刻(UTC): {trippedAtUtc:o}");
+        foreach (var pair in _settings.BackupSettings)
+        {
+            sb.AppendLine($"・Source: {pair.Source}");
+            sb.AppendLine($"  Destination: {pair.Destination}");
+            if (!string.IsNullOrWhiteSpace(pair.UserName)) sb.AppendLine($"  接続ユーザー名(参考): {pair.UserName}");
+        }
+        return sb.ToString();
     }
 
     // 緊急停止フラグの発動時刻を取得する（emergency.txtから）。存在しない/解析不能なら null
@@ -347,6 +365,7 @@ public class Worker : BackgroundService
                 var manifest = new RestoreManifest {
                     SourcePath = pair.Source,
                     DestinationPath = pair.Destination,
+                    AccountUserNameHint = pair.UserName,
                     GeneratedAtUtc = DateTime.UtcNow,
                     CircuitBreakerTrippedAtUtc = trippedUtc
                 };
@@ -831,6 +850,8 @@ public class RestoreManifest
     public int SchemaVersion { get; set; } = 1;
     public string SourcePath { get; set; } = "";
     public string DestinationPath { get; set; } = "";
+    // 元のSource/Destination接続に使われていたユーザー名(参考情報。パスワードは含めない)
+    public string AccountUserNameHint { get; set; } = "";
     public DateTime GeneratedAtUtc { get; set; }
     public DateTime? CircuitBreakerTrippedAtUtc { get; set; }
     public RestoreManifestExclusions Exclusions { get; set; } = new();
