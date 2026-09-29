@@ -20,9 +20,9 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 
-; ★出力先: 実行しているユーザーのデスクトップに保存
-OutputDir={#GetEnv('USERPROFILE')}\Desktop
-OutputBaseFilename=MBackSetup
+; ★出力先: リポジトリ直下に保存(Gitからは除外)
+OutputDir={#SourcePath}
+OutputBaseFilename=MBackSetup_CRS
 
 ; ★圧縮設定
 Compression=lzma

@@ -7,8 +7,8 @@
 [Oo]bj/
 [Oo]ut/
 
-# 配布バイナリ（インストーラー）はリポジトリに含めない
-MBackSetup.exe
+# 配布バイナリ（インストーラー）はリポジトリに含めない(MBackSetup.exe / MBackSetup_CRS.exe 等)
+MBackSetup*.exe
 *.msi
 *.appx
 *.appxbundle
