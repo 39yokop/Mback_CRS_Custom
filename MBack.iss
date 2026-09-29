@@ -7,6 +7,7 @@
 #define MyServiceExeName "MBack.Service.exe"
 #define MyServiceName "MBackService"
 #define MyIconFile "app.ico"
+#define MyRestoreExeName "Mrestore.exe"
 
 [Setup]
 ; アプリケーション情報
@@ -49,6 +50,8 @@ Source: "{#SourcePath}\THIRD-PARTY-NOTICES.txt"; DestDir: "{app}"; Flags: ignore
 [Icons]
 ; スタートメニューにショートカット作成
 Name: "{group}\{#MyAppName} 設定"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyIconFile}"
+; 災害復旧ツール(Mrestore)へのショートカット作成
+Name: "{group}\{#MyAppName} 災害復旧ツール(Mrestore)"; Filename: "{app}\{#MyRestoreExeName}"; IconFilename: "{app}\{#MyIconFile}"
 ; デスクトップにショートカット作成
 Name: "{autodesktop}\{#MyAppName} 設定"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyIconFile}"; Tasks: desktopicon
 
