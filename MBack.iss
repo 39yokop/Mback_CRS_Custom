@@ -8,6 +8,8 @@
 #define MyServiceName "MBackService"
 #define MyIconFile "app.ico"
 #define MyRestoreExeName "Mrestore.exe"
+; MRestoreリポジトリの自己完結パブリッシュ出力先(dotnet publish -c Release の結果)
+#define MyRestorePublishDir "D:\Nextcloud\Developer\MRestore\bin\Release\net10.0-windows\win-x64\publish"
 
 [Setup]
 ; アプリケーション情報
@@ -46,6 +48,9 @@ Source: "C:\MBackRelease\appsettings.json"; DestDir: "{app}"; Flags: onlyifdoesn
 
 ; 3. OSSサードパーティライセンス通知ファイルをコピー
 Source: "{#SourcePath}\THIRD-PARTY-NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
+
+; 4. 災害復旧ツール(Mrestore)をビルド出力から直接取り込む(MBackReleaseへのコピー不要)
+Source: "{#MyRestorePublishDir}\Mrestore.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; スタートメニューにショートカット作成
