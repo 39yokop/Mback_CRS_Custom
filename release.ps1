@@ -53,6 +53,39 @@ Copy-PublishOutput (Join-Path $repoRoot "MBack.Config\bin\Release\net10.0-window
 # 5. app.ico を配置(ApplicationIconはexeに埋め込まれるだけでpublish出力には含まれないため)
 Copy-Item (Join-Path $repoRoot "app.ico") (Join-Path $releaseDir "app.ico") -Force
 
+# 6. 再配布に必要なライセンス表示ファイルを同梱する
+#    自己完結ビルドで.NETランタイムを、Magick.NETでLGPL等のネイティブライブラリを再配布するため。
+#    MBack.issの C:\MBackRelease\* のワイルドカードで自動的にインストーラーへ含まれる。
+$nugetRoot = if ($env:NUGET_PACKAGES) { $env:NUGET_PACKAGES } else { Join-Path $env:USERPROFILE ".nuget\packages" }
+
+function Copy-NoticeFile($sourcePath, $destName) {
+    if (-not (Test-Path $sourcePath)) { throw "ライセンス表示ファイルが見つかりません: $sourcePath" }
+    Copy-Item $sourcePath (Join-Path $releaseDir $destName) -Force
+    Write-Host "==> ライセンス表示を同梱: $destName" -ForegroundColor Cyan
+}
+
+function Get-IncludedFrameworkVersion($runtimeConfigPath, $frameworkName) {
+    $cfg = Get-Content $runtimeConfigPath -Raw | ConvertFrom-Json
+    $fw = $cfg.runtimeOptions.includedFrameworks | Where-Object { $_.name -eq $frameworkName } | Select-Object -First 1
+    if (-not $fw) { throw "$frameworkName のバージョンを取得できません: $runtimeConfigPath" }
+    return $fw.version
+}
+
+$netVersion = Get-IncludedFrameworkVersion (Join-Path $releaseDir "MBack.Service.runtimeconfig.json") "Microsoft.NETCore.App"
+$netPack = Join-Path $nugetRoot "microsoft.netcore.app.runtime.win-x64\$netVersion"
+Copy-NoticeFile (Join-Path $netPack "LICENSE.TXT") "DOTNET-LICENSE.txt"
+Copy-NoticeFile (Join-Path $netPack "THIRD-PARTY-NOTICES.TXT") "DOTNET-THIRD-PARTY-NOTICES.txt"
+
+$desktopVersion = Get-IncludedFrameworkVersion (Join-Path $releaseDir "MBack.Config.runtimeconfig.json") "Microsoft.WindowsDesktop.App"
+$desktopPack = Join-Path $nugetRoot "microsoft.windowsdesktop.app.runtime.win-x64\$desktopVersion"
+Copy-NoticeFile (Join-Path $desktopPack "LICENSE") "DOTNET-WINDOWSDESKTOP-LICENSE.txt"
+
+# Magick.NET(ImageMagickと、LGPL等を含むネイティブライブラリ一式)の著作権・ライセンス表示
+$serviceProj = [xml](Get-Content (Join-Path $repoRoot "MBack.Service\MBack.Service.csproj") -Raw)
+$magickRef = $serviceProj.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Magick.NET-Q8-AnyCPU" } | Select-Object -First 1
+if (-not $magickRef) { throw "MBack.Service.csproj から Magick.NET-Q8-AnyCPU のバージョンを取得できません" }
+Copy-NoticeFile (Join-Path $nugetRoot "magick.net-q8-anycpu\$($magickRef.Version)\Notice.txt") "MAGICK-NET-NOTICE.txt"
+
 Write-Host ""
 Write-Host "完了しました。$releaseDir の準備ができました。" -ForegroundColor Green
 Write-Host "あとは MBack.iss を Inno Setup Compiler でコンパイルしてください。" -ForegroundColor Green

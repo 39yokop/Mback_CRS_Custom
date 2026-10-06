@@ -5,8 +5,10 @@ MBack_CRS_Custom - サードパーティ ソフトウェア使用許諾表示
 コンポーネントを利用しています。各コンポーネントの著作権は各権利者に
 帰属し、それぞれ記載のライセンス条件のもとで配布されています。
 
-いずれのライセンス (MIT License / Apache License 2.0) も、本ソフトウェア
-の再配布にあたって独自ソースコードの開示を要求するものではありません。
+いずれのライセンス (MIT License / Apache License 2.0 / パブリックドメイン /
+GNU LGPL 等) も、本ソフトウェア自体の独自ソースコードの開示を要求するもの
+ではありません。ただし GNU LGPL のライブラリについては、本書「7」に記載の
+条件に従います。
 
 目次
 ----
@@ -14,6 +16,9 @@ MBack_CRS_Custom - サードパーティ ソフトウェア使用許諾表示
  2. Apache License 2.0 準拠コンポーネント一覧
  3. MIT License 全文
  4. Apache License 2.0 全文
+ 5. .NET ランタイム (自己完結型で同梱)
+ 6. SQLite
+ 7. ImageMagick / Magick.NET (LGPL等のライブラリを含む)
 
 
 1. MIT License 準拠コンポーネント
@@ -288,3 +293,46 @@ DEALINGS IN THE SOFTWARE.
       of your accepting any such warranty or additional liability.
 
    END OF TERMS AND CONDITIONS
+
+
+5. .NET ランタイム (自己完結型で同梱)
+======================================
+本ソフトウェアは、Microsoft .NET ランタイムおよび Windows Desktop ランタイム
+(MIT License, Copyright (c) .NET Foundation and Contributors) を、実行ファイルと
+同じフォルダに同梱しています。ライセンスおよびランタイムが含むサードパーティの
+著作権表示は、インストール先フォルダの次のファイルを参照してください。
+
+  - DOTNET-LICENSE.txt                    .NET ランタイムのライセンス
+  - DOTNET-THIRD-PARTY-NOTICES.txt        .NET ランタイムが含むサードパーティの著作権表示
+  - DOTNET-WINDOWSDESKTOP-LICENSE.txt     Windows Desktop ランタイムのライセンス
+
+
+6. SQLite
+==========
+SQLitePCLRaw.bundle_e_sqlite3 を通じて、SQLite のネイティブライブラリを同梱して
+います。SQLite はパブリックドメインです (https://www.sqlite.org/copyright.html)。
+
+
+7. ImageMagick / Magick.NET (HEIC変換・画像リサイズ機能)
+=========================================================
+  - Magick.NET:  Copyright Dirk Lemstra / Apache License 2.0
+                 https://github.com/dlemstra/Magick.NET
+  - ImageMagick: ImageMagick License (https://imagemagick.org/license/)
+
+ネイティブライブラリ Magick.Native-Q8-x64.dll には、ImageMagick が利用する
+多数のライブラリが含まれています。含まれるライブラリの一覧と、それぞれの
+ライセンス全文は、インストール先フォルダの MAGICK-NET-NOTICE.txt を参照して
+ください(先頭に同梱バージョンの記載があります)。
+
+このうち libheif, libde265, glib, liblqr, libraw などは、GNU Lesser General
+Public License (LGPL) の下で提供されています。LGPL ライブラリについて:
+
+  - これらは Magick.Native-Q8-x64.dll という独立したファイルとして同梱されており、
+    本ソフトウェア本体のプログラムとは静的にリンクされていません。
+  - お客様は、この DLL を改変版または別バージョンに差し替えて利用することができ、
+    そのための解析(リバースエンジニアリング)も妨げません。
+  - 対応するソースコードは、次の場所から入手できます。
+        Magick.Native: https://github.com/dlemstra/Magick.Native
+        ImageMagick:   https://github.com/ImageMagick/ImageMagick
+    ソースコードの入手方法について不明な点は、本ソフトウェアの提供元まで
+    ご連絡ください。
