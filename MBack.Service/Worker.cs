@@ -42,6 +42,12 @@ public class Worker : BackgroundService
 
     private bool _isCircuitBreakerTripped = false;
     private readonly ConcurrentQueue<DateTime> _eventTimes = new();
+
+    // 画像は件数カウントの対象外だが、中身が「画像として読めない内容」(暗号化の疑い)に
+    // 書き換えられたファイルが一定期間内にこの数に達したら緊急停止する
+    private const int INVALID_IMAGE_THRESHOLD = 10;
+    private const int INVALID_IMAGE_SECONDS = 300;
+    private readonly ImageIntegrityMonitor _imageMonitor = new(INVALID_IMAGE_THRESHOLD, INVALID_IMAGE_SECONDS);
     private const int RANSOMWARE_SECONDS = 60;
 
     public Worker(ILogger<Worker> logger)
@@ -271,6 +277,31 @@ public class Worker : BackgroundService
         return ext is ".jpg" or ".jpeg" or ".png" or ".heic" or ".bmp" or ".tif" or ".tiff" or ".gif" or ".webp";
     }
 
+    // 画像ファイルが「画像として読めない内容」に書き換えられていないかを確認する。
+    // 疑わしい画像が閾値に達したら緊急停止して true を返す。
+    private bool CheckImageIntegrity(string filePath)
+    {
+        if (_isCircuitBreakerTripped) return true;
+
+        var result = _imageMonitor.Evaluate(filePath, DateTime.Now);
+        if (result.NewlySuspect)
+        {
+            _logger.LogWarning($"画像ファイルの中身が画像として読めません(暗号化の疑い): {filePath} ({result.SuspectCount}/{INVALID_IMAGE_THRESHOLD}件)");
+        }
+        if (result.Tripped)
+        {
+            TriggerCircuitBreaker($"【緊急警告】{INVALID_IMAGE_SECONDS}秒間に{result.SuspectCount}個の画像ファイルが、画像として読めない内容(暗号化の疑い)に書き換えられました。\nランサムウェア感染の疑いがあるため、MBackを緊急停止しました。");
+            return true;
+        }
+        return false;
+    }
+
+    private static bool HasExistingBackup(string sourcePath, BackupPair pair)
+    {
+        try { return File.Exists(Path.Combine(pair.Destination, Path.GetRelativePath(pair.Source, sourcePath))); }
+        catch { return false; }
+    }
+
     private bool CheckForRansomware(string filePath, WatcherChangeTypes changeType)
     {
         if (_isCircuitBreakerTripped) return true;
@@ -283,8 +314,14 @@ public class Worker : BackgroundService
             return true;
         }
 
-        if (changeType == WatcherChangeTypes.Created) return false; 
-        if (IsImageFile(filePath)) return false;
+        if (changeType == WatcherChangeTypes.Created) return false;
+        if (IsImageFile(filePath))
+        {
+            // 画像は件数カウントの対象外(大量コピー・大量リサイズで誤停止しないため)。
+            // 代わりに中身が画像として読めるかで判定する。削除は中身を確認できないため対象外。
+            if (changeType == WatcherChangeTypes.Deleted) return false;
+            return CheckImageIntegrity(filePath);
+        }
 
         var now = DateTime.Now;
         _eventTimes.Enqueue(now);
@@ -532,7 +569,16 @@ public class Worker : BackgroundService
         if (IsExcluded(sourcePath)) return;
         if (Directory.Exists(sourcePath)) return;
         
-        if (!isFullScan && CheckForRansomware(sourcePath, changeType)) return;
+        if (!isFullScan)
+        {
+            if (CheckForRansomware(sourcePath, changeType)) return;
+        }
+        else if (IsImageFile(sourcePath) && HasExistingBackup(sourcePath, pair) && CheckImageIntegrity(sourcePath))
+        {
+            // 全件走査はランサム検知を通らないため、既にバックアップのある画像が壊れていないかだけ確認する
+            // (初回の同期で見つかる元から壊れた画像では停止しないよう、バックアップ済みのものに限る)
+            return;
+        }
 
         _pendingBackups.AddOrUpdate(
             sourcePath,
