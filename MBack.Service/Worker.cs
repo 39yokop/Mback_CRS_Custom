@@ -45,9 +45,9 @@ public class Worker : BackgroundService
 
     // 画像は件数カウントの対象外だが、中身が「画像として読めない内容」(暗号化の疑い)に
     // 書き換えられたファイルが一定期間内にこの数に達したら緊急停止する
-    private const int INVALID_IMAGE_THRESHOLD = 10;
+    private const int INVALID_IMAGE_THRESHOLD = 10;   // 既定値
     private const int INVALID_IMAGE_SECONDS = 300;
-    private readonly ImageIntegrityMonitor _imageMonitor = new(INVALID_IMAGE_THRESHOLD, INVALID_IMAGE_SECONDS);
+    private ImageIntegrityMonitor _imageMonitor = new(INVALID_IMAGE_THRESHOLD, INVALID_IMAGE_SECONDS);   // 実際の個数は設定(ImageEncryptionThreshold)でLoadSettings時に作り直す
     private const int RANSOMWARE_SECONDS = 60;
 
     public Worker(ILogger<Worker> logger)
@@ -282,11 +282,12 @@ public class Worker : BackgroundService
     private bool CheckImageIntegrity(string filePath)
     {
         if (_isCircuitBreakerTripped) return true;
+        if (_settings.ImageEncryptionThreshold <= 0) return false;   // 設定で無効化されている
 
         var result = _imageMonitor.Evaluate(filePath, DateTime.Now);
         if (result.NewlySuspect)
         {
-            _logger.LogWarning($"画像ファイルの中身が画像として読めません(暗号化の疑い): {filePath} ({result.SuspectCount}/{INVALID_IMAGE_THRESHOLD}件)");
+            _logger.LogWarning($"画像ファイルの中身が画像として読めません(暗号化の疑い): {filePath} ({result.SuspectCount}/{_settings.ImageEncryptionThreshold}件)");
         }
         if (result.Tripped)
         {
@@ -756,6 +757,7 @@ public class Worker : BackgroundService
                         GlobalExclusions = s.GlobalExclusions ?? new(),
                         LogRetentionDays = s.LogRetentionDays > 0 ? s.LogRetentionDays : 60,
                         RansomwareThreshold = s.RansomwareThreshold > 0 ? s.RansomwareThreshold : 2000,
+                        ImageEncryptionThreshold = s.ImageEncryptionThreshold >= 0 ? s.ImageEncryptionThreshold : INVALID_IMAGE_THRESHOLD,
                         MaintenanceStart = s.MaintenanceStart ?? "00:00",
                         MaintenanceEnd = s.MaintenanceEnd ?? "00:00",
                         SendDailySummary = s.SendDailySummary,
@@ -778,6 +780,7 @@ public class Worker : BackgroundService
                         MaxHistory = s.MaxHistory > 0 ? s.MaxHistory : 10
                     };
 
+                    _imageMonitor = new ImageIntegrityMonitor(Math.Max(1, _settings.ImageEncryptionThreshold), INVALID_IMAGE_SECONDS);
                     foreach (var pair in _settings.BackupSettings) pair.Password = CredentialProtector.Unprotect(pair.Password);
                     _settings.MailConfig.Password = CredentialProtector.Unprotect(_settings.MailConfig.Password);
                 }
@@ -841,7 +844,7 @@ public class AppSettings {
     public List<BackupPair> BackupSettings { get; set; } = new(); 
     public List<string> GlobalExclusions { get; set; } = new(); 
     public int LogRetentionDays { get; set; } = 60; 
-    public int RansomwareThreshold { get; set; } = 2000; 
+    public int RansomwareThreshold { get; set; } = 2000; public int ImageEncryptionThreshold { get; set; } = 10; 
     public string MaintenanceStart { get; set; } = "00:00"; 
     public string MaintenanceEnd { get; set; } = "00:00"; 
     public bool SendDailySummary { get; set; } = false; 
@@ -866,7 +869,7 @@ public class AppSettingsRaw {
     public List<BackupPair> BackupSettings { get; set; } = new(); 
     public List<string> GlobalExclusions { get; set; } = new(); 
     public int LogRetentionDays { get; set; } = 60; 
-    public int RansomwareThreshold { get; set; } = 2000; 
+    public int RansomwareThreshold { get; set; } = 2000; public int ImageEncryptionThreshold { get; set; } = 10; 
     public string MaintenanceStart { get; set; } = "00:00"; 
     public string MaintenanceEnd { get; set; } = "00:00"; 
     public bool SendDailySummary { get; set; } = false; 

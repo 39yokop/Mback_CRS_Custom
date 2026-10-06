@@ -11,6 +11,7 @@ public class AppSettingsRaw
     // 詳細設定
     public int LogRetentionDays { get; set; } = 60;
     public int RansomwareThreshold { get; set; } = 2000;
+    public int ImageEncryptionThreshold { get; set; } = 10;   // 画像の暗号化検知(個/5分)。0で無効
     public string MaintenanceStart { get; set; } = "00:00";
     public string MaintenanceEnd { get; set; } = "00:00";
     public bool SendDailySummary { get; set; } = false;

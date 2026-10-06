@@ -8,6 +8,7 @@ public class AdvancedSettingsForm : Form
 {
     public int LogRetentionDays { get; private set; }
     public int RansomwareThreshold { get; private set; }
+    public int ImageEncryptionThreshold { get; private set; }
     
     // ★新機能のプロパティ
     public string MaintenanceStart { get; private set; }
@@ -16,22 +17,24 @@ public class AdvancedSettingsForm : Form
 
     private NumericUpDown _numLogDays = new();
     private NumericUpDown _numThreshold = new();
+    private NumericUpDown _numImageThreshold = new();
     
     // ★新機能のUIコントロール
     private DateTimePicker _dtpMaintStart = new() { Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 80 };
     private DateTimePicker _dtpMaintEnd = new() { Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 80 };
     private CheckBox _chkSummary = new() { Text = "一日の稼働サマリー（日報）を毎朝8時にメールで送る", AutoSize = true };
 
-    public AdvancedSettingsForm(int currentLogDays, int currentThreshold, string maintStart, string maintEnd, bool sendSummary)
+    public AdvancedSettingsForm(int currentLogDays, int currentThreshold, int currentImageThreshold, string maintStart, string maintEnd, bool sendSummary)
     {
         LogRetentionDays = currentLogDays;
         RansomwareThreshold = currentThreshold;
+        ImageEncryptionThreshold = currentImageThreshold;
         MaintenanceStart = string.IsNullOrWhiteSpace(maintStart) ? "00:00" : maintStart;
         MaintenanceEnd = string.IsNullOrWhiteSpace(maintEnd) ? "00:00" : maintEnd;
         SendDailySummary = sendSummary;
 
         this.Text = "詳細設定 (オプション)";
-        this.Size = new Size(420, 360); // 項目が増えたので縦に少し広げました
+        this.Size = new Size(420, 480); // 項目が増えたので縦に少し広げました
         this.StartPosition = FormStartPosition.CenterParent;
 
         // 時間の初期値セット
@@ -66,6 +69,19 @@ public class AdvancedSettingsForm : Form
         panel.Controls.Add(lblDesc, 0, row);
         panel.SetColumnSpan(lblDesc, 2); row++;
 
+        panel.Controls.Add(new Label { Text = "画像の暗号化検知 (個/5分):", AutoSize = true, Anchor = AnchorStyles.Left }, 0, row);
+        _numImageThreshold.Minimum = 0; _numImageThreshold.Maximum = 1000;
+        _numImageThreshold.Value = Math.Clamp(ImageEncryptionThreshold, 0, 1000); _numImageThreshold.Width = 100;
+        panel.Controls.Add(_numImageThreshold, 1, row++);
+
+        var lblImageDesc = new Label
+        {
+            Text = "※ 画像ファイルが「画像として読めない内容」に書き換えられた(暗号化の疑い)個数が、5分間に上記個数以上になった場合に緊急停止します。大量コピーやリサイズ作業は数えません。0にするとこの検知を使いません。",
+            ForeColor = Color.DimGray, AutoSize = true, MaximumSize = new Size(350, 0)
+        };
+        panel.Controls.Add(lblImageDesc, 0, row);
+        panel.SetColumnSpan(lblImageDesc, 2); row++;
+
         // --- ★新機能：メンテナンスモード設定 ---
         var lblMaint = new Label { Text = "\n--- メンテナンスモード ---", ForeColor = Color.Gray, AutoSize = true };
         panel.Controls.Add(lblMaint, 0, row); panel.SetColumnSpan(lblMaint, 2); row++;
@@ -99,7 +115,7 @@ public class AdvancedSettingsForm : Form
         var btnOk = new Button { Text = "OK", Width = 90 };
         btnOk.Click += (s, e) => { 
             LogRetentionDays = (int)_numLogDays.Value; 
-            RansomwareThreshold = (int)_numThreshold.Value; 
+            RansomwareThreshold = (int)_numThreshold.Value; ImageEncryptionThreshold = (int)_numImageThreshold.Value; 
             MaintenanceStart = _dtpMaintStart.Value.ToString("HH:mm");
             MaintenanceEnd = _dtpMaintEnd.Value.ToString("HH:mm");
             SendDailySummary = _chkSummary.Checked;

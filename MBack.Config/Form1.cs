@@ -38,7 +38,8 @@ namespace MBack.Config
         private List<BackupPair> _backupList = new();
         private List<string> _globalExclusions = new();
         private int _logRetentionDays = 60; 
-        private int _ransomwareThreshold = 2000; 
+        private int _ransomwareThreshold = 2000;
+        private int _imageEncryptionThreshold = 10;   // 画像の暗号化検知(個/5分)。0で無効 
         private string _maintStart = "00:00";
         private string _maintEnd = "00:00";
         private bool _sendSummary = false;
@@ -278,9 +279,9 @@ namespace MBack.Config
         
         private void OnAdvancedClick(object? sender, EventArgs e)
         {
-            using var form = new AdvancedSettingsForm(_logRetentionDays, _ransomwareThreshold, _maintStart, _maintEnd, _sendSummary);
+            using var form = new AdvancedSettingsForm(_logRetentionDays, _ransomwareThreshold, _imageEncryptionThreshold, _maintStart, _maintEnd, _sendSummary);
             if (form.ShowDialog() == DialogResult.OK) {
-                _logRetentionDays = form.LogRetentionDays; _ransomwareThreshold = form.RansomwareThreshold;
+                _logRetentionDays = form.LogRetentionDays; _ransomwareThreshold = form.RansomwareThreshold; _imageEncryptionThreshold = form.ImageEncryptionThreshold;
                 _maintStart = form.MaintenanceStart; _maintEnd = form.MaintenanceEnd; _sendSummary = form.SendDailySummary;
                 SaveSettings(); 
             }
@@ -361,6 +362,7 @@ namespace MBack.Config
                     _backupList = settings.BackupSettings ?? new(); _globalExclusions = settings.GlobalExclusions ?? new();
                     _logRetentionDays = settings.LogRetentionDays > 0 ? settings.LogRetentionDays : 60;
                     _ransomwareThreshold = settings.RansomwareThreshold > 0 ? settings.RansomwareThreshold : 2000;
+                    _imageEncryptionThreshold = settings.ImageEncryptionThreshold >= 0 ? settings.ImageEncryptionThreshold : 10;
                     _maintStart = settings.MaintenanceStart ?? "00:00"; _maintEnd = settings.MaintenanceEnd ?? "00:00";
                     _sendSummary = settings.SendDailySummary; _mailConfig = settings.MailConfig ?? new();
 
@@ -407,7 +409,7 @@ namespace MBack.Config
 
                 var settings = new AppSettingsRaw {
                     BackupSettings = encryptedBackupList, GlobalExclusions = _globalExclusions, LogRetentionDays = _logRetentionDays,
-                    RansomwareThreshold = _ransomwareThreshold, MaintenanceStart = _maintStart, MaintenanceEnd = _maintEnd,
+                    RansomwareThreshold = _ransomwareThreshold, ImageEncryptionThreshold = _imageEncryptionThreshold, MaintenanceStart = _maintStart, MaintenanceEnd = _maintEnd,
                     SendDailySummary = _sendSummary, MailConfig = encryptedMailConfig,
                     
                     HeicConversionEnabled = _heicEnabled, KeepOriginalHeic = _keepHeic,
