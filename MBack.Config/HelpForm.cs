@@ -8,8 +8,7 @@ public class HelpForm : Form
 {
     public HelpForm()
     {
-        // ★タイトルを3.0仕様にアップデート
-        this.Text = "MBack_CRS_Custom 3.0 使い方ガイド (自律最適化＆防衛仕様)";
+        this.Text = "MBack_CRS_Custom 3.1 使い方ガイド (自律最適化＆防衛仕様)";
         this.Size = new Size(680, 600); // 新機能タブが増えたので少し広げます
         this.StartPosition = FormStartPosition.CenterParent;
         this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -39,7 +38,7 @@ public class HelpForm : Form
 
         // --- 2. ★新規：CRSカスタム機能 ---
         tab.TabPages.Add(CreateHelpPage("CRS カスタム機能", 
-            "【MBack_CRS_Custom 3.0 専用の自律最適化機能】\n\n" +
+            "【MBack_CRS_Custom 3.1 専用の自律最適化機能】\n\n" +
             "① 📸 HEIC画像の自動変換\n" +
             "   iPhone等で撮影されたHEIC画像を、印刷に最適なサイズのJPGへ自動変換します。\n" +
             "   変換後の元ファイルは「Original」フォルダに安全に退避され、\n" +

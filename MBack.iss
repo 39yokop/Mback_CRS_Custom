@@ -1,7 +1,7 @@
 ; --- MBack_CRS_Custom 完全版 インストーラー作成スクリプト ---
 
 #define MyAppName "MBack_CRS_Custom"
-#define MyAppVersion "3.0"
+#define MyAppVersion "3.1.0"
 #define MyAppPublisher "My Company"
 #define MyAppExeName "MBack.Config.exe"
 #define MyServiceExeName "MBack.Service.exe"

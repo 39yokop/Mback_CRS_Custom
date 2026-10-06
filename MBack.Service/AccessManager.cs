@@ -14,7 +14,7 @@ public class AccessManager
     /// <summary>
     /// Accessデータベースから「失注」かつ「3年以上前」の案件Noのリストを取得します。
     /// </summary>
-    /// <param name="dbPath">AccessDB (.accdb) のフルパス</param>
+    /// <param name="dbPath">AccessDB (.accdb / .mdb) のフルパス</param>
     /// <returns>条件に一致する案件Noのリスト</returns>
     public static List<string> GetTargetProjects(string dbPath)
     {

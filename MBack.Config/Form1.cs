@@ -64,7 +64,7 @@ namespace MBack.Config
 
         public Form1()
         {
-            this.Text = "MBack 設定ツール (v3.0 - Route Beta Edition)";
+            this.Text = "MBack 設定ツール (v3.1 - Route Beta Edition)";
             this.ClientSize = new Size(800, 550); 
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -664,7 +664,7 @@ namespace MBack.Config
             var lblAcc = new Label { Text = "Access DB:", Location = new Point(45, 75), AutoSize = true };
             _txtAccess.Bounds = new Rectangle(140, 72, 300, 25);
             var btnAcc = new Button { Text = "...", Bounds = new Rectangle(450, 72, 40, 25) };
-            btnAcc.Click += (s, e) => { var d = new OpenFileDialog { Filter = "Access|*.accdb" }; if (d.ShowDialog() == DialogResult.OK) _txtAccess.Text = d.FileName; };
+            btnAcc.Click += (s, e) => { var d = new OpenFileDialog { Filter = "Accessデータベース (*.accdb;*.mdb)|*.accdb;*.mdb|すべてのファイル (*.*)|*.*" }; if (d.ShowDialog() == DialogResult.OK) _txtAccess.Text = d.FileName; };
 
             var lblSite = new Label { Text = "現場ルート:", Location = new Point(45, 110), AutoSize = true };
             _txtSite.Bounds = new Rectangle(140, 107, 300, 25);
