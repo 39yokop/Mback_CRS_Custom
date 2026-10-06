@@ -69,6 +69,11 @@ Name: "desktopicon"; Description: "デスクトップにアイコンを作成する"; GroupDescr
 Filename: "sc.exe"; Parameters: "create {#MyServiceName} binPath= ""{app}\{#MyServiceExeName}"" start= auto"; Flags: runhidden
 ; 2. サービスの説明文を設定
 Filename: "sc.exe"; Parameters: "description {#MyServiceName} ""MBack 自動バックアップサービス"""; Flags: runhidden
+; 2b. 起動タイプを「自動(遅延開始)」にする(OS起動直後の混雑による起動タイムアウト対策)。
+;     上書きインストール時は sc create が失敗するため、別エントリとして毎回実行する
+Filename: "sc.exe"; Parameters: "config {#MyServiceName} start= delayed-auto"; Flags: runhidden
+; 2c. 異常終了した場合は60秒後に自動再起動する(最大3回、1日でカウントリセット)
+Filename: "sc.exe"; Parameters: "failure {#MyServiceName} reset= 86400 actions= restart/60000/restart/60000/restart/60000"; Flags: runhidden
 ; 3. サービスを開始する
 Filename: "sc.exe"; Parameters: "start {#MyServiceName}"; Flags: runhidden
 ; 4. 設定ツールを起動するか聞く
