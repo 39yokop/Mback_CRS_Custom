@@ -7,6 +7,9 @@
 [Oo]bj/
 [Oo]ut/
 
+# インストーラー作成用のステージングフォルダ(release.ps1が生成する)
+release/
+
 # 配布バイナリ（インストーラー）はリポジトリに含めない(MBackSetup.exe / MBackSetup_CRS.exe 等)
 MBackSetup*.exe
 *.msi

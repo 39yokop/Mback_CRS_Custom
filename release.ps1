@@ -1,14 +1,14 @@
 ﻿# MBack_CRS_Custom - リリース用ステージング自動化スクリプト
 #
 # MBack.Service / MBack.Config / MRestore(別リポジトリ) をそれぞれ自己完結で
-# dotnet publish し、C:\MBackRelease を作り直す。
+# dotnet publish し、リポジトリ直下の release フォルダを作り直す。
 # 完了後、MBack.iss を Inno Setup Compiler でコンパイルすればインストーラーが作れる。
 
 $ErrorActionPreference = "Stop"
 
 $repoRoot = $PSScriptRoot
-$mrestoreRepo = "D:\Nextcloud\Developer\MRestore"
-$releaseDir = "C:\MBackRelease"
+$mrestoreRepo = [System.IO.Path]::GetFullPath((Join-Path $repoRoot "..\MRestore"))   # 同じ親フォルダにあるMRestoreリポジトリ
+$releaseDir = Join-Path $repoRoot "release"
 
 function Invoke-DotnetPublish($csprojPath) {
     Write-Host "==> dotnet publish: $csprojPath" -ForegroundColor Cyan
@@ -27,8 +27,12 @@ function Copy-PublishOutput($sourceDir, $destDir) {
     $global:LASTEXITCODE = 0
 }
 
-# 1. C:\MBackRelease を作り直す(前回別プロダクトをビルドした際の残骸を持ち越さないため)
+# 1. release フォルダを作り直す(前回のビルドの残骸を持ち越さないため)
 if (Test-Path $releaseDir) {
+    # 想定外の場所を消さないよう、リポジトリ直下の release フォルダであることを確認してから削除する
+    if ((Split-Path $releaseDir -Leaf) -ne "release" -or (Split-Path $releaseDir -Parent) -ne $repoRoot) {
+        throw "削除対象が想定外のパスです: $releaseDir"
+    }
     Write-Host "==> 既存の $releaseDir を削除中..." -ForegroundColor Yellow
     Remove-Item $releaseDir -Recurse -Force
 }
@@ -46,7 +50,7 @@ if (Test-Path $mrestoreRepo) {
     Write-Host "MBack.issのコンパイル時にMrestore.exeが見つからずエラーになります。" -ForegroundColor Yellow
 }
 
-# 4. Service/Config の publish 出力を C:\MBackRelease にまとめる
+# 4. Service/Config の publish 出力を release フォルダにまとめる
 Copy-PublishOutput (Join-Path $repoRoot "MBack.Service\bin\Release\net10.0\win-x64\publish") $releaseDir
 Copy-PublishOutput (Join-Path $repoRoot "MBack.Config\bin\Release\net10.0-windows\win-x64\publish") $releaseDir
 
@@ -55,7 +59,7 @@ Copy-Item (Join-Path $repoRoot "app.ico") (Join-Path $releaseDir "app.ico") -For
 
 # 6. 再配布に必要なライセンス表示ファイルを同梱する
 #    自己完結ビルドで.NETランタイムを、Magick.NETでLGPL等のネイティブライブラリを再配布するため。
-#    MBack.issの C:\MBackRelease\* のワイルドカードで自動的にインストーラーへ含まれる。
+#    MBack.issの release\* のワイルドカードで自動的にインストーラーへ含まれる。
 $nugetRoot = if ($env:NUGET_PACKAGES) { $env:NUGET_PACKAGES } else { Join-Path $env:USERPROFILE ".nuget\packages" }
 
 function Copy-NoticeFile($sourcePath, $destName) {

@@ -8,8 +8,6 @@
 #define MyServiceName "MBackService"
 #define MyIconFile "app.ico"
 #define MyRestoreExeName "Mrestore.exe"
-; MRestoreリポジトリの自己完結パブリッシュ出力先(dotnet publish -c Release の結果)
-#define MyRestorePublishDir "D:\Nextcloud\Developer\MRestore\bin\Release\net10.0-windows\win-x64\publish"
 
 [Setup]
 ; アプリケーション情報
@@ -33,7 +31,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
 
 ; ★インストーラー自体のアイコン設定
-SetupIconFile=C:\MBackRelease\{#MyIconFile}
+SetupIconFile={#SourcePath}\release\{#MyIconFile}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]
@@ -41,16 +39,16 @@ Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 
 [Files]
 ; 1. 設定ファイル以外をすべてコピー（上書きOK）
-Source: "C:\MBackRelease\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "appsettings.json"
+Source: "{#SourcePath}\release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "appsettings.json"
 
 ; 2. 設定ファイルだけは「ファイルがない時だけ」コピーする（上書き禁止！）
-Source: "C:\MBackRelease\appsettings.json"; DestDir: "{app}"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "{#SourcePath}\release\appsettings.json"; DestDir: "{app}"; Flags: onlyifdoesntexist uninsneveruninstall
 
 ; 3. OSSサードパーティライセンス通知ファイルをコピー
 Source: "{#SourcePath}\THIRD-PARTY-NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
 
-; 4. 災害復旧ツール(Mrestore)をビルド出力から直接取り込む(MBackReleaseへのコピー不要)
-Source: "{#MyRestorePublishDir}\Mrestore.exe"; DestDir: "{app}"; Flags: ignoreversion
+; 4. 災害復旧ツール(Mrestore)をビルド出力から直接取り込む(releaseフォルダへのコピー不要。MRestoreリポジトリ側でdotnet publish -c Releaseした結果を直接参照)
+Source: "{#SourcePath}\..\MRestore\bin\Release\net10.0-windows\win-x64\publish\Mrestore.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; スタートメニューにショートカット作成
